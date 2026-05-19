@@ -353,6 +353,8 @@ class RenderParagraph extends RenderBox
     List<RenderBox>? children,
     Color? selectionColor,
     SelectionRegistrar? registrar,
+    ui.BoxHeightStyle selectionHeightStyle = ui.BoxHeightStyle.tight,
+    ui.BoxWidthStyle selectionWidthStyle = ui.BoxWidthStyle.tight,
   }) : assert(text.debugAssertIsValid()),
        assert(maxLines == null || maxLines > 0),
        assert(
@@ -362,6 +364,8 @@ class RenderParagraph extends RenderBox
        _softWrap = softWrap,
        _overflow = overflow,
        _selectionColor = selectionColor,
+       _selectionHeightStyle = selectionHeightStyle,
+       _selectionWidthStyle = selectionWidthStyle,
        _textPainter = TextPainter(
          text: text,
          textAlign: textAlign,
@@ -755,6 +759,30 @@ class RenderParagraph extends RenderBox
         false) {
       markNeedsPaint();
     }
+  }
+
+  /// {@macro flutter.widgets.selectionHeightStyle}
+  ui.BoxHeightStyle get selectionHeightStyle => _selectionHeightStyle;
+  ui.BoxHeightStyle _selectionHeightStyle;
+
+  set selectionHeightStyle(ui.BoxHeightStyle value) {
+    if (_selectionHeightStyle == value) {
+      return;
+    }
+    _selectionHeightStyle = value;
+    markNeedsPaint();
+  }
+
+  /// {@macro flutter.widgets.selectionWidthStyle}
+  ui.BoxWidthStyle get selectionWidthStyle => _selectionWidthStyle;
+  ui.BoxWidthStyle _selectionWidthStyle;
+
+  set selectionWidthStyle(ui.BoxWidthStyle value) {
+    if (_selectionWidthStyle == value) {
+      return;
+    }
+    _selectionWidthStyle = value;
+    markNeedsPaint();
   }
 
   Offset _getOffsetForPosition(TextPosition position) {
@@ -1359,7 +1387,11 @@ class RenderParagraph extends RenderBox
         placeholderIndex += 1;
       } else {
         final initialDirection = currentDirection;
-        final List<ui.TextBox> rects = getBoxesForSelection(selection);
+        final List<ui.TextBox> rects = getBoxesForSelection(
+          selection,
+          boxHeightStyle: selectionHeightStyle,
+          boxWidthStyle: selectionWidthStyle,
+        );
         if (rects.isEmpty) {
           continue;
         }
@@ -1475,6 +1507,20 @@ class RenderParagraph extends RenderBox
     );
     properties.add(DiagnosticsProperty<Locale>('locale', locale, defaultValue: null));
     properties.add(IntProperty('maxLines', maxLines, ifNull: 'unlimited'));
+    properties.add(
+      EnumProperty<ui.BoxHeightStyle>(
+        'selectionHeightStyle',
+        selectionHeightStyle,
+        defaultValue: ui.BoxHeightStyle.tight,
+      ),
+    );
+    properties.add(
+      EnumProperty<ui.BoxWidthStyle>(
+        'selectionWidthStyle',
+        selectionWidthStyle,
+        defaultValue: ui.BoxWidthStyle.tight,
+      ),
+    );
   }
 }
 
@@ -1539,7 +1585,11 @@ class _SelectableFragment
     final flipHandles = isReversed != (TextDirection.rtl == paragraph.textDirection);
     final selection = TextSelection(baseOffset: selectionStart, extentOffset: selectionEnd);
     final selectionRects = <Rect>[];
-    for (final TextBox textBox in paragraph.getBoxesForSelection(selection)) {
+    for (final TextBox textBox in paragraph.getBoxesForSelection(
+      selection,
+      boxHeightStyle: paragraph.selectionHeightStyle,
+      boxWidthStyle: paragraph.selectionWidthStyle,
+    )) {
       selectionRects.add(textBox.toRect());
     }
     final selectionCollapsed = selectionStart == selectionEnd;
@@ -3610,7 +3660,11 @@ class _SelectableFragment
       final selectionPaint = Paint()
         ..style = PaintingStyle.fill
         ..color = paragraph.selectionColor!;
-      for (final TextBox textBox in paragraph.getBoxesForSelection(selection)) {
+      for (final TextBox textBox in paragraph.getBoxesForSelection(
+        selection,
+        boxHeightStyle: paragraph.selectionHeightStyle,
+        boxWidthStyle: paragraph.selectionWidthStyle,
+      )) {
         context.canvas.drawRect(textBox.toRect().shift(offset), selectionPaint);
       }
     }
